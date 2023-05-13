@@ -47,4 +47,35 @@ for(i in 1:(dim(datosFiltrados)[1])){
   distrito[i]=Distritos$Neighborhood[indice]
 }
 distrito
+datosFiltrados=cbind(datosFiltrados, distrito)
+datosFiltrados
+head(datosFiltrados)
+library(sf)
+#install.packages('mapview')
+library(mapview)
+datosFiltrados$Lat
+mapview(datosFiltrados, xcol = "Long", ycol = "Lat", crs = 4269, grid = FALSE,
+        layer.name = c("Crimenes"), col.regions='blue')
+#Vista general de los crimenes sin estratificar
+
+
+#Ahora los estratificamos por distrito
+unique(datosFiltrados$distrito)
+
+length(unique(datosFiltrados$distrito)) #tenemos los 22 distritos
+
+colors=c('forestgreen', 'wheat4','darkorchid1', 'gold', 'navy','lightgreen','orange', 'slateblue',
+                      'magenta', 'red', 'brown', 'tan', 'olivedrab', 'dodgerblue','darksalmon' ,
+                      'navy', 'yellow', 'slateblue','seagreen', 'orangered', 'orchid', 'mediumvioletred')
+length(colors)
+p=mapview(datosFiltrados[datosFiltrados$distrito==unique(datosFiltrados$distrito)[1],], xcol = "Long", ycol = "Lat", crs = 4269, grid = FALSE,
+                                layer.name = c(unique(datosFiltrados$distrito)[1]), col.regions=colors[1])
+p
+#y ahora agregamos  los distritos estratificando
+for(i in 2:length(unique(datosFiltrados$distrito))){
+  print(i)
+p=p+mapview(datosFiltrados[datosFiltrados$distrito==unique(datosFiltrados$distrito)[i],], xcol = "Long", ycol = "Lat", crs = 4269, grid = FALSE,
+layer.name = c(unique(datosFiltrados$distrito)[i]), col.regions=colors[i])
+}
+p
 
