@@ -1,7 +1,7 @@
 ###
 ### 
 datosCrudos=read.csv("crimenes2022.csv",header=TRUE)
-
+#Filtramos datos
 datosCrudos$OFFENSE_DESCRIPTION=as.factor(datosCrudos$OFFENSE_DESCRIPTION)
 summary(datosCrudos$OFFENSE_DESCRIPTION)
 datosFiltrados=datosCrudos[(datosCrudos$OFFENSE_DESCRIPTION=='LARCENY ALL OTHERS')|
@@ -32,7 +32,7 @@ dim(datosFiltrados)
 datosFiltrados=datosFiltrados[is.na(datosFiltrados$Long)==FALSE,]
 summary(datosFiltrados$Long) #ya no hay datos faltantes
 
-
+# Hacemos código de voronoi
 Distritos=read.csv('coordenadasCentrales.csv')
 Distritos
 Distritos$Neighborhood
@@ -47,3 +47,4 @@ for(i in 1:(dim(datosFiltrados)[1])){
   distrito[i]=Distritos$Neighborhood[indice]
 }
 distrito
+
