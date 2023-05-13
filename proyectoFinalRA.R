@@ -1,6 +1,6 @@
 ###
 ### 
-datosCrudos=read.csv("crimenes2022.csv",header=TRUE)
+datosCrudos=read.csv("csvFolder/crimenes2022.csv",header=TRUE)
 #Filtramos datos
 datosCrudos$OFFENSE_DESCRIPTION=as.factor(datosCrudos$OFFENSE_DESCRIPTION)
 summary(datosCrudos$OFFENSE_DESCRIPTION)
@@ -33,7 +33,7 @@ datosFiltrados=datosFiltrados[is.na(datosFiltrados$Long)==FALSE,]
 summary(datosFiltrados$Long) #ya no hay datos faltantes
 
 # Hacemos código de voronoi
-Distritos=read.csv('coordenadasCentrales.csv')
+Distritos=read.csv('csvFolder/coordenadasCentrales.csv')
 Distritos
 Distritos$Neighborhood
 Distritos$Latitude
@@ -49,6 +49,7 @@ for(i in 1:(dim(datosFiltrados)[1])){
 distrito
 datosFiltrados=cbind(datosFiltrados, distrito)
 datosFiltrados
+write.csv(datosFiltrados, "csvFolder/datosFiltrados.csv", row.names = FALSE)
 head(datosFiltrados)
 library(sf)
 #install.packages('mapview')
