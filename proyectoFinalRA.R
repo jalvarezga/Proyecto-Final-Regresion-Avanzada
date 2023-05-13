@@ -80,3 +80,5 @@ layer.name = c(unique(datosFiltrados$distrito)[i]), col.regions=colors[i])
 }
 p
 
+
+
