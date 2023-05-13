@@ -1,0 +1,92 @@
+# Cargamos paquetes necesarios
+
+```{r}
+source(paste0(getwd(), "/paqueteTecnico/claseNietoBUGS.R"))
+```
+
+# Estructura de creación de modelos
+
+## DEFINICIÓN DEL MODELO
+```{r}
+## NO CORRER
+
+# 1.-SE CREAN VARIABLES DATA, INITS, PARAMETERS
+# 2.- SE ESCRIBE EL MODELO
+modelCode <- "modelo escrico en el txt" #todavia no corrijo cómo hacer con el caso normalito
+# 3.- SE INSTANCIA TODO PARA CORRER EL MODELO CON LOS PARÁMETROS QUE QUEREMOS EN LA SIMULACIÓN
+modelo.sim <- bugsModel$new(data, inits, parameters, modelCode1,n.thin=1, n.iter=10000, n.burnin=1000)
+# 4.- SE CORRE EL MODELO
+modelo.sim$runBugsModel()
+```
+## CHECAR CONVERGENCIA
+```{r}
+# TRACEPLOT
+modelo.sim$bugsTraceplot()
+# CHECA LOS PLOTS DE LA CADENA PARA UN CIERTO PARÁMETRO EN PARAMA
+# SI NO SE SABE EN QUÉ ORDEN ESTÁN LOS PARAMS, CORRER EL SEGUNDO CÓDIGO
+modelo.sim$graphConvergence(parama=5)
+
+# SUMMARY DE TODAS LAS VARS TRACKEADAS
+modelo.sim$summaryModel()
+
+# DIC DEL MODELO
+modelo.sim$dicModelfunc()
+
+#tabla resumen 
+
+modelo.sim$resumenfunc() #no se ha checado
+```
+
+## REALIZAR MÁS GRÁFICAS...
+NOTA:
+Lo que más se usa es out.sum, el cual sale de modelo.sim$summModel
+Cualquier otro parámetro checar en paqueteTecnico.
+
+```{r}
+
+##CHECAR EN QUÉ NOS PUEDE SERVIR ESTE CÓDIGO
+#w
+out.w<-out.sum[grep("w",rownames(out.sum)),]
+out.w<-out.w[-nrow(out.w),]
+out.est<-out.w
+k<-n
+ymin<-min(out.est[,c(1,3,7)])
+ymax<-max(out.est[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(1:k,out.est[,1],xlab="index",ylab="",ylim=c(ymin,ymax))
+segments(1:k,out.est[,3],1:k,out.est[,7])
+abline(h=0,col="grey70")
+title("Efecto espacial")
+
+#Predictions
+out.yf<-out.sum[grep("yf1",rownames(out.sum)),]
+#longitude
+or<-order(s1)
+ymin<-min(y,out.yf[,c(1,3,7)])
+ymax<-max(y,out.yf[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(s1,y,ylim=c(ymin,ymax),xlab="longitude")
+points(s1[or],out.yf[or,1],pch=20,col=2)
+segments(s1[or],out.yf[or,3],s1[or],out.yf[or,7],col=2)
+#latitude
+or<-order(s2)
+ymin<-min(y,out.yf[,c(1,3,7)])
+ymax<-max(y,out.yf[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(s2,y,ylim=c(ymin,ymax),xlab="latitude")
+points(s2[or],out.yf[or,1],pch=20,col=2)
+segments(s2[or],out.yf[or,3],s2[or],out.yf[or,7],col=2)
+#
+plot(y,out.yf[,1])
+R2<-(cor(scallop$lgcatch,out.yf[,1]))^2
+print(R2)
+#map
+map("usa",xlim=c(-74,-71),ylim=c(38.2,41.5))
+int.scp<-interp(s1,s2,out.yf[,1])
+contour(int.scp,add=TRUE)
+image(int.scp,add=TRUE)
+
+#Future predictions
+out.yf2<-out.sum[grep("yf2",rownames(out.sum)),]
+print(out.yf2[,c(1,3,7)])
+```
