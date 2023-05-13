@@ -1,6 +1,10 @@
 # Cargamos paquetes necesarios
 
 ```{r}
+# Load necessary packages
+library(R2OpenBUGS)
+library(methods)
+
 source(paste0(getwd(), "/paqueteTecnico/claseNietoBUGS.R"))
 ```
 
@@ -90,3 +94,6 @@ image(int.scp,add=TRUE)
 out.yf2<-out.sum[grep("yf2",rownames(out.sum)),]
 print(out.yf2[,c(1,3,7)])
 ```
+
+# MODELOS CORRIDOS
+
