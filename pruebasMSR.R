@@ -12,7 +12,7 @@ mVector <- data.frame(cbind(neighNamesVector, poblacionNeigh))
 mVector$mVectorInicial <- as.numeric(mVector$poblacionNeigh)
 
 write.csv(mVector[,c(1,3)], "csvFolder/vector-mi.csv", row.names = FALSE)
-
+datosFiltrados <- read.csv("csvFolder/datosFiltrados.csv", header = TRUE, sep = ",")
 datosFiltradosNeigh <- datosFiltrados %>% 
   group_by(distrito) %>% 
   summarise(count = n())

@@ -14,8 +14,14 @@ library(maptools)
 library(RColorBrewer)
 library(classInt)
 library(spdep)
+library(rgdal)
+library(rgeos)
+
+
 
 source(paste0(getwd(), "/paqueteTecnico/claseNietoBUGS.R"))
+#CHECAR QUE SÍ HAYA CORRIDO
+source(paste0(getwd(), "/pruebasMSR.R"))
 ```
 
 # Estructura de creación de modelos
@@ -110,7 +116,7 @@ print(out.yf2[,c(1,3,7)])
 ## Cargamos datos iniciales
 
 ```{r}
-source(paste0(getwd(), "/pruebasMSR.R"))
+
 # número de registros 
 n<-length(vector_yi) 
 
@@ -314,16 +320,24 @@ modelo2.sim$resumenfunc()
 y<- datosFiltradosNeigh$count
 n<-length(y) 
 
-# definiendo
+# definiendo cantidad de personas por neighborhood
+ee <- mVector$mVectorInicial
+
+m <- 2
 # valores de los regresiones para cada distrito asociadas a una coordenada
+#x <- cbind()
 
-# valores a predecir en el modelo en un distrito nuevo
-#elegimos distrito a predecir
-set.seed(123)
-nAleExc <- sample(1:22, size = 2, replace = FALSE)
+#Preparando datos espaciales
+bostonSpatialData <- readOGR(dsn = "paqueteTecnico/Boston_Neighborhoods.geojson")
+bostonSpatialData <- bostonSpatialData[!bostonSpatialData$Name %in% c("Bay Village","Chinatown","Harbor Islands","Leather District"),]
 
-#-Defining data-
-W.nb<-poly2nb(scotland$spatial.polygon)
+bostonSpatialData <- bostonSpatialData[order(bostonSpatialData$Name),]
+
+bostonSpatialData <- gBuffer(bostonSpatialData, byid=TRUE, width=0)
+
+
+#-Defining data matrix
+W.nb<-poly2nb(bostonSpatialData)
 print(W.nb)
 m<-rep(0,n)
 W.l<-matrix(NA,nrow=n,ncol=11)
@@ -342,21 +356,18 @@ for (i in 1:n) {
   }
 }
 weights<-rep(1,length(adj))
-#
 
 
-
-# Defining data of the model
-data<-list("n"=n,"y"=y,"x"=x,"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=nAleExc)
-
-#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+#-Defining data-
+data<-list("n"=n,"y"=y,"ee"=ee,"x"=x,"adj"=adj,"weights"=weights,"num"=m)
 
 #-Defining inits-
-inits<-function(){list(beta=rep(0,7),tau=1,w=rep(0,n),tau.w=1,phi=1,yf1=rep(0,n),wf=rep(0,m),yf2=rep(0,m))}
+inits<-function(){list(beta=rep(0,7),tau.t=1,tau.c=1,theta=rep(0,n),phi=rep(0,n),yf=rep(0,n))}
 
 #-Selecting parameters to monitor-
-parameters<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+parameters<-c("beta","lambda","theta","phi","yf")
 ```
+
 
 ```{r}
 modelCode3 <- "model
@@ -365,14 +376,18 @@ modelCode3 <- "model
 for (i in 1:n) {
 	y[i] ~ dpois(mu[i])
 	mu[i]<-lambda[i]*ee[i]
-	log(lambda[i])<-beta[1]+beta[2]*x[i]+theta[i]+phi[i]
+	log(lambda[i])<-beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]+theta[i]+phi[i]
 	}
 #Priors 
-for (i in 1:2) { beta[i] ~ dnorm(0,0.001) }
+for (i in 1:7) { beta[i] ~ dnorm(0,0.001) }
 for (i in 1:n) { theta[i] ~ dnorm(0,tau.t) }
+
 tau.t ~ dgamma(0.001,0.001)
+
 phi[1:n] ~ car.normal(adj[],weights[],num[],tau.c)
+
 tau.c ~ dgamma(0.1,0.1)
+
 #Prediction 
 for (i in 1:n) { yf[i] ~ dpois(mu[i]) }
 
@@ -398,4 +413,21 @@ modelo3.sim$resumenfunc()
 
 ```{r}
 
+```
+
+## Mapas para analizar(Análisis exploratorio de datos de modelo 3)
+```{r}
+#Map of SMR
+plotvar<- y/ee # podemos modificar para checar aspectos
+
+nclr <- 6
+plotclr <- colorRampPalette(c("#a6cee3", "#1f78b4"))(nclr)
+class<-classIntervals(plotvar,nclr,dataPrecision=2,style="quantile")
+colcode<-findColours(class,plotclr)
+#
+boston.map <- bostonSpatialData
+plot(boston.map,col=colcode)
+legend("bottomleft", legend=names(attr(colcode, "table")), 
+       fill=attr(colcode, "palette"), cex=1, bty="n")
+title(main="Distritos de boston")
 ```
