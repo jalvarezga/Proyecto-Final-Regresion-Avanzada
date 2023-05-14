@@ -98,9 +98,6 @@ print(out.yf2[,c(1,3,7)])
 # MODELOS CORRIDOS
 
 ## Cargamos datos iniciales
-```{r}
-# tomamos valores de regresores
-```
 
 ```{r}
 source(paste0(getwd(), "/pruebasMSR.R"))

@@ -25,7 +25,7 @@ vector_yi <- data.frame(prop = log(datosFiltradosNeigh$count/mVector$mVectorInic
 
 write.csv(vector_yi, "csvFolder/vector-yi.csv", row.names = FALSE)
 
-# creación de regresores
+# creación de regresores-----------------------------------------
 
 data_edades <- read.csv("csvFolder/base_edades.csv", header = TRUE, sep = ",")
 data_educacion <- read.csv("csvFolder/base_educacion.csv", header = TRUE, sep = ",")
