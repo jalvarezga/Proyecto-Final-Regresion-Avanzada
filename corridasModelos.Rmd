@@ -97,3 +97,85 @@ print(out.yf2[,c(1,3,7)])
 
 # MODELOS CORRIDOS
 
+## Cargamos datos iniciales
+```{r}
+# tomamos valores de regresores
+```
+
+```{r}
+source(paste0(getwd(), "/pruebasMSR.R"))
+# número de registros 
+n<-length(vector_yi) 
+
+# variable de respuesta para cada distrito
+y<- vector_yi
+
+# valores de los regresiones para cada distrito asociadas a una coordenada
+#x <- cbind(data_indices$indice_edades, data_indices$indice_educacion, data_indices$indice_movilidad, data_indices$indice_raza), FUN=quitarPorcentaje, MARGIN=2))
+x<-cbind(data_indices$indice_edades, data_indices$indice_educacion, data_indices$indice_movilidad, data_indices$indice_raza,data_percapita$Per.Capita.Income,quitarPorcentaje(data_pobreza$Poverty.rate))
+
+#coordenadas de las regiones i
+
+s1 <- coordenadas$Longitude
+s2 <- coordenadas$Latitude
+
+# valores a predecir en el modelo en una coordenada nueva
+#elegimos distrito a predecir
+set.seed(123)
+nAleExc <- sample(1:22, size = 2, replace = FALSE)
+
+s1f<-s1[nAleExc]
+s2f<-s2[nAleExc]
+
+m <- 2
+
+# Defining data of the model
+data<-list("n"=n,"y"=y,"x"=x,"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f)
+
+#-Defining inits-
+inits<-function(){list(beta=rep(0,7),tau=1,w=rep(0,n),tau.w=1,phi=1,yf1=rep(0,n),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters<-c("alpha","tau","w","tau.w","phi","yf1","yf2")
+
+```
+
+## Modelo 1
+
+con índices (Modelo de Diego)
+
+```{r}
+modelCode1 <- "model
+{
+#Likelihood
+for (i in 1:n) {
+	y[i] ~ dnorm(mu[i],tau)
+	mu[i]<-w[i]+beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]
+	w0[i]<-0
+	}
+
+#Priors 
+alpha ~ dnorm(0,0.001)
+tau ~ dgamma(0.1,0.1)
+w[1:n] ~ spatial.exp(w0[],s1[],s2[],tau.w,phi,1)
+tau.w ~ dgamma(0.1,0.1)
+phi ~ dgamma(0.1,0.1)
+
+#Prediction 1
+for (i in 1:n) { yf1[i] ~ dnorm(mu[i],tau) }
+#Prediction 2
+#wf[1:m] ~ spatial.pred(w0f[],s1f[],s2f[],w[])
+for (i in 1:m) { 
+	yf2[i] ~ dnorm(muf[i],tau) 
+	muf[i]<-alpha+wf[i]
+	w0f[i]<-0
+	wf[i] ~ spatial.unipred(w0f[i],s1f[i],s2f[i],w[])
+}
+
+}" 
+
+modelo.sim <- bugsModel$new(data, inits, parameters, modelCode1,n.thin=5, n.iter=10000, n.burnin=1000)
+
+modelo.sim$runBugsModel()
+```
+

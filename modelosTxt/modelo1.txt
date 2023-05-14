@@ -12,6 +12,7 @@ tau ~ dgamma(0.1,0.1)
 w[1:n] ~ spatial.exp(w0[],s1[],s2[],tau.w,phi,1)
 tau.w ~ dgamma(0.1,0.1)
 phi ~ dgamma(0.1,0.1)
+
 #Prediction 1
 for (i in 1:n) { yf1[i] ~ dnorm(mu[i],tau) }
 #Prediction 2

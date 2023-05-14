@@ -9,6 +9,11 @@ prob<-function(x){
   out
 }
 
+quitarPorcentaje <- function(x){
+  x <- as.numeric(gsub("%", "", x))/100
+  return(x)
+}
+
 bugsModel <- R6Class("bugsModel",
   public = list(
     data = NULL,
