@@ -1,0 +1,745 @@
+# Cargamos paquetes necesarios
+
+```{r}
+# Load necessary packages
+library(R2OpenBUGS)
+library(methods)
+library(SemiPar)
+library(maps)
+library(interp)
+library(gstat)
+library(sp)
+library(SpatialEpi)
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(spdep)
+library(rgdal)
+library(rgeos)
+
+
+
+source(paste0(getwd(), "/paqueteTecnico/claseNietoBUGS.R"))
+#CHECAR QUE SÍ HAYA CORRIDO
+source(paste0(getwd(), "/pruebasMSR.R"))
+```
+
+# Estructura de creación de modelos
+
+## DEFINICIÓN DEL MODELO
+```{r}
+## NO CORRER
+
+# 1.-SE CREAN VARIABLES DATA, INITS, PARAMETERS
+# 2.- SE ESCRIBE EL MODELO
+modelCode <- "modelo escrico en el txt" #todavia no corrijo cómo hacer con el caso normalito
+# 3.- SE INSTANCIA TODO PARA CORRER EL MODELO CON LOS PARÁMETROS QUE QUEREMOS EN LA SIMULACIÓN
+modelo.sim <- bugsModel$new(data, inits, parameters, modelCode1,n.thin=1, n.iter=10000, n.burnin=1000)
+# 4.- SE CORRE EL MODELO
+modelo.sim$runBugsModel()
+```
+## CHECAR CONVERGENCIA
+```{r}
+# TRACEPLOT
+modelo.sim$bugsTraceplot()
+# CHECA LOS PLOTS DE LA CADENA PARA UN CIERTO PARÁMETRO EN PARAMA
+# SI NO SE SABE EN QUÉ ORDEN ESTÁN LOS PARAMS, CORRER EL SEGUNDO CÓDIGO
+modelo.sim$graphConvergence(parama=5)
+
+# SUMMARY DE TODAS LAS VARS TRACKEADAS
+modelo.sim$summaryModel()
+
+# DIC DEL MODELO
+modelo.sim$dicModelfunc()
+
+#tabla resumen 
+
+modelo.sim$resumenfunc() #no se ha checado
+```
+
+## REALIZAR MÁS GRÁFICAS...
+NOTA:
+Lo que más se usa es out.sum, el cual sale de modelo.sim$summModel
+Cualquier otro parámetro checar en paqueteTecnico.
+
+```{r}
+
+##CHECAR EN QUÉ NOS PUEDE SERVIR ESTE CÓDIGO
+#w
+out.w<-out.sum[grep("w",rownames(out.sum)),]
+out.w<-out.w[-nrow(out.w),]
+out.est<-out.w
+k<-n
+ymin<-min(out.est[,c(1,3,7)])
+ymax<-max(out.est[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(1:k,out.est[,1],xlab="index",ylab="",ylim=c(ymin,ymax))
+segments(1:k,out.est[,3],1:k,out.est[,7])
+abline(h=0,col="grey70")
+title("Efecto espacial")
+
+#Predictions
+out.yf<-out.sum[grep("yf1",rownames(out.sum)),]
+#longitude
+or<-order(s1)
+ymin<-min(y,out.yf[,c(1,3,7)])
+ymax<-max(y,out.yf[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(s1,y,ylim=c(ymin,ymax),xlab="longitude")
+points(s1[or],out.yf[or,1],pch=20,col=2)
+segments(s1[or],out.yf[or,3],s1[or],out.yf[or,7],col=2)
+#latitude
+or<-order(s2)
+ymin<-min(y,out.yf[,c(1,3,7)])
+ymax<-max(y,out.yf[,c(1,3,7)])
+par(mfrow=c(1,1))
+plot(s2,y,ylim=c(ymin,ymax),xlab="latitude")
+points(s2[or],out.yf[or,1],pch=20,col=2)
+segments(s2[or],out.yf[or,3],s2[or],out.yf[or,7],col=2)
+#
+plot(y,out.yf[,1])
+R2<-(cor(scallop$lgcatch,out.yf[,1]))^2
+print(R2)
+#map
+map("usa",xlim=c(-74,-71),ylim=c(38.2,41.5))
+int.scp<-interp(s1,s2,out.yf[,1])
+contour(int.scp,add=TRUE)
+image(int.scp,add=TRUE)
+
+#Future predictions
+out.yf2<-out.sum[grep("yf2",rownames(out.sum)),]
+print(out.yf2[,c(1,3,7)])
+```
+
+# MODELOS CORRIDOS
+
+## Cargamos datos iniciales
+
+```{r}
+
+# número de registros 
+n<-length(vector_yi$prop) 
+
+# variable de respuesta para cada distrito
+y<- vector_yi$prop
+
+# valores de los regresiones para cada distrito asociadas a una coordenada
+#x <- cbind(data_indices$indice_edades, data_indices$indice_educacion, data_indices$indice_movilidad, data_indices$indice_raza), FUN=quitarPorcentaje, MARGIN=2))
+x<-cbind(data_indices$indice_edades, data_indices$indice_educacion, data_indices$indice_movilidad, data_indices$indice_raza,data_percapita$Per.Capita.Income,data_pobreza$Poverty.rate)
+
+#coordenadas de las regiones i
+
+s1 <- coordenadas$Longitude
+s2 <- coordenadas$Latitude
+
+# valores a predecir en el modelo en una coordenada nueva
+#elegimos distrito a predecir
+set.seed(123)
+nAleExc <- sample(1:22, size = 2, replace = FALSE)
+
+s1f<-s1[nAleExc]
+s2f<-s2[nAleExc]
+
+m <- 2
+
+# Defining data of the model
+data<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
+
+#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+
+#-Defining inits-
+inits<-function(){list(beta=rep(0,7),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+
+```
+
+# Modelo 1
+
+con índices (Modelo de Diego)
+
+```{r}
+modelCode1 <- "model
+{
+#Likelihood
+for (i in 1:n) {
+	y[i] ~ dnorm(mu[i],tau)
+	mu[i]<-w[i]+beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]
+	w0[i]<-0
+	}
+
+#Priors 
+for (j in 1:7) { beta[j] ~ dnorm(0,0.001) }
+tau ~ dgamma(0.1,0.1)
+w[1:n] ~ spatial.exp(w0[],s1[],s2[],tau.w,phi,1)
+tau.w ~ dgamma(0.1,0.1)
+phi ~ dgamma(0.1,0.1)
+
+#Prediction 1
+for (i in 1:n) { yf1[i] ~ dnorm(mu[i],tau) }
+#Prediction 2
+#wf[1:m] ~ spatial.pred(w0f[],s1f[],s2f[],w[])
+for (i in 1:m) { 
+	yf2[i] ~ dnorm(muf[i],tau) 
+	muf[i]<-wf[i]+beta[1]+beta[2]*predx[i,1]+beta[3]*predx[i,2]+beta[4]*predx[i,3]+beta[5]*predx[i,4]+beta[6]*predx[i,5]+beta[7]*predx[i,6]
+	w0f[i]<-0
+	wf[i] ~ spatial.unipred(w0f[i],s1f[i],s2f[i],w[])
+}
+
+}" 
+
+modelo.sim <- bugsModel$new(data, inits, parameters, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo1.txt",n.thin=50, n.iter=50000, n.burnin=5000)
+
+modelo.sim$runBugsModel()
+
+```
+
+## Checamos convergencia
+```{r}
+
+saveRDS(modelo.sim, "Modelo1FINAL.rds")
+
+modelo.sim$graphConvergence(parama=5)
+
+modelo.sim$summaryModel()
+
+modelo.sim$dicModelfunc()
+
+
+modelo.sim$resumenfunc()
+```
+
+## Graficamos resultados
+
+```{r}
+names(x)
+```
+
+# Modelo 2
+
+sin índices (Modelo de Joaquín completo)
+```{r}
+# recreación de matriz de regresores
+x<-cbind(data_edades$X0.9Years.,#edades#1
+data_edades$X10.17Years.,#2
+data_edades$X18.19Years.,#3 
+data_edades$X20.34Years.,#4 
+data_edades$X35.59Years.,#5
+data_edades$X60.OverYears.,#6 
+data_educacion$LessThanHighSchool.,#educacion#7
+data_educacion$HighSchoolGraduate.,#8
+data_educacion$SomeCollege.,#9
+data_educacion$BachelorsDegree.,#10
+data_educacion$BachelorsDegree.,#11
+data_educacion$MastersDegree.,#12
+data_householdtype$Married.couple.family,#householdtype#13
+data_householdtype$Male.householder..no.spouse.present,#14
+data_householdtype$Female.householder..no.spouse.present,#15
+data_householdtype$Householder.living.alone,#16
+data_householdtype$Householder.not.living.alone,#17
+data_movilidad$MovedWithinSameCountry.,#movilidad#18
+data_movilidad$MovedDifferentCountryWithinSameState.,#19
+data_movilidad$MovedFromDifferentState.,#20
+data_movilidad$MovedFromAbroad.,#21
+data_percapita$Per.Capita.Income,#percapita#22
+data_pobreza$Poverty.rate, #pobreza#23
+data_razas$White., #razas#24
+data_razas$Black.,#25
+data_razas$Hispanic.,#26
+data_razas$Asian.,#27
+data_razas$Other.#28
+)
+
+
+```
+#Modelo pasimonioso
+```{r}
+PorcentajeCasados=c(16.9,
+                    27.2,
+                    28.4,
+                    26.4,
+                    36.4,
+                    26.6,
+                    35.8,
+                    30.4,
+                    15.3,
+                    38.4,
+                    33.7,
+                    13.8,
+                    29.8,
+                    13.7,
+                    17.8,
+                    40.4,
+                    17.8,
+                    24.7,
+                    23.2,
+                    28.3,
+                    29.6,
+                    46.2)
+
+PorcentajeMayores=c(4.2,
+                    18.7,
+                    17.4,
+                    14.3,
+                    16.6,
+                    16.3,
+                    19.8,
+                    12.8,
+                    6.7,
+                    21.6,
+                    16.9,
+                    1.2,
+                    18.4,
+                    15.6,
+                    13.7,
+                    19.8,
+                    16.7,
+                    12.7,
+                    13.3,
+                    19.3,
+                    20.9,
+                    27.0)
+PorcentajerAfroamericanos=c(5.7,
+                            4.3,
+                            1.4,
+                            4.3,
+                            5.1,
+                            44.0,
+                            4.0,
+                            2.5,
+                            5.4,
+                            46.4,
+                            14.3,
+                            5.4,
+                            74.4,
+                            15.3,
+                            0.3,
+                            19.3,
+                            50.3,
+                            5.6,
+                            2.1,
+                            11.3,
+                            7.0,
+                            12.2)
+
+PorcentajeHispanos=c(13.4,
+                     9.6,
+                     6.0,
+                     12.1,
+                     11.1,
+                     19.9,
+                     6.0,
+                     56.5,
+                     12.0,
+                     26.3,
+                     22.0,
+                     7.3,
+                     14.1,
+                     21.4,
+                     7.0,
+                     23.9,
+                     30.7,
+                     11.1,
+                     2.9,
+                     14.5,
+                     12.7,
+                     10.1)
+
+PorcentajeMaestria=c(33.6,
+                     46.3,
+                     44.5,
+                     28.4,
+                     34.3,
+                     10.6,
+                     36.8,
+                     10.0,
+                     38.4,
+                     9.9,
+                     35.2,
+                     44.3,
+                     8.8,
+                     24.0,
+                     30.2,
+                     24.2,
+                     7.8,
+                     22.5,
+                     36.3,
+                     36.2,
+                     46.4,
+                     28.2)
+porcentajeUndergrads=c(59.2,
+                       53.4,
+                       17.7,
+                       39.4,
+                       9.3,
+                       23.7,
+                       63.8,
+                       19.5,
+                       81.9,
+                       24.7,
+                       24.2,
+                       89.0,
+                       19.4,
+                       59.2,
+                       31.5,
+                       18.4,
+                       34.7,
+                       19.5,
+                       35.9,
+                       23.3,
+                       33.3,
+                       18.9)
+
+#ingreso anual per capita
+incomePerCapita=c(34149,
+                  110677,
+                  100005,
+                  41261,
+                  75339,
+                  29767,
+                  80057,
+                  31473,
+                  28021,
+                  32744,
+                  51655,
+                  7975,
+                  28356,
+                  23446,
+                  89696,
+                  41252,
+                  20978,
+                  64745,
+                  129651,
+                  83609,
+                  77069,
+                  47836)
+
+#porcentajde de hogares con indreso anual superior a 150 mil usd
+houseHoldIncome=c(12.6,
+                  39.7,
+                  38.0,
+                  17.7,
+                  41.2,
+                  14.2,
+                  36.4,
+                  15.0,
+                  14.4,
+                  17.8,
+                  27.7,
+                  0.0,
+                  10.0,
+                  7.9,
+                  29.6,
+                  21.7,
+                  6.6,
+                  36.4,
+                  51.1,
+                  35.9,
+                  34.9,
+                  26.2)
+
+longTravel=c(10.7,
+             4.1,
+             3.6,
+             11.2,
+             6.9,
+             16.9,
+             4.5,
+             12.3,
+             5.6,
+             20.3,
+             9.3,
+             3.5,
+             26.5,
+             9.5,
+             6.1,
+             15.3,
+             13.0,
+             4.7,
+             7.4,
+             7.5,
+             2.7,
+             14.5)
+metroTren=c(19.4,
+            21.9,
+            18.1,
+            18.7,
+            12.9,
+            16.8,
+            17.5,
+            49.0,
+            15.2,
+            12.4,
+            31.9,
+            7.9,
+            13.4,
+            28.2,
+            23.1,
+            20.0,
+            10.7,
+            14.0,
+            11.4,
+            17.3,
+            19.0,
+            11.9)
+x=cbind(porcentajeUndergrads, PorcentajeMaestria, PorcentajeHispanos, PorcentajerAfroamericanos, PorcentajeMayores, PorcentajeCasados, incomePerCapita, metroTren)
+x<-matrix(x,nrow = 22,ncol=8)
+x
+```
+
+
+
+PUEDES MODIFICAR DESDE AQUÍ PARA QUE CORRA EL MODELO
+```{r}
+# Defining data of the model
+data2<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
+
+#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+
+#-Defining inits-
+inits2<-function(){list(beta=rep(0,9),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+
+
+```
+```{r}
+
+modelo2.sim <- bugsModel$new(data2, inits2, parameters, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo2.txt",,n.thin=20, n.iter=50000, n.burnin=5000)
+
+modelo2.sim$runBugsModel()
+```
+
+## Checamos convergencia
+```{r}
+
+saveRDS(modelo2.sim, "Modelo2FINAL.rds")
+
+modelo2.sim$graphConvergence(parama=5)
+
+modelo2.sim$summaryModel()
+
+modelo2.sim$dicModelfunc()
+
+modelo2.sim$resumenfunc()
+```
+
+## Graficamos resultados
+
+```{r}
+
+```
+
+# Modelo 3
+
+```{r}
+# variable de respuesta para cada distrito
+#y<- datosFiltradosNeigh$count
+#n<-length(y) 
+
+# definiendo cantidad de personas por neighborhood
+#ee <- mVector$mVectorInicial
+
+#m <- 2
+# valores de los regresiones para cada distrito asociadas a una coordenada
+#x <- cbind()
+
+#Preparando datos espaciales
+#bostonSpatialData <- readOGR(dsn = "paqueteTecnico/Boston_Neighborhoods.geojson")
+#bostonSpatialData <- bostonSpatialData[!bostonSpatialData$Name %in% c("Bay Village","Chinatown","Harbor Islands","Leather District"),]
+
+#bostonSpatialData <- bostonSpatialData[order(bostonSpatialData$Name),]
+
+#bostonSpatialData <- gBuffer(bostonSpatialData, byid=TRUE, width=0)
+
+
+#-Defining data matrix
+#W.nb<-poly2nb(bostonSpatialData)
+#print(W.nb)
+#m<-rep(0,n)
+#W.l<-matrix(NA,nrow=n,ncol=11)
+#adj<-NULL
+#for (i in 1:n) {
+#  if (W.nb[[i]][1]!=0) {
+#    m[i]<-length(W.nb[[i]])
+#    W.l[i,1:m[i]]<-W.nb[[i]]
+#    adj<-c(adj,W.nb[[i]])
+#  }}
+#W<-matrix(0,nrow=n,ncol=n)
+#for (i in 1:n) {
+#  for (j in 1:m[i]) {
+#    W[i,W.l[i,j]]<-1
+#    W[W.l[i,j],i]<-1
+#  }
+#}
+#weights<-rep(1,length(adj))
+
+
+#-Defining data-
+#data3<-list("n"=n,"y"=y,"ee"=ee,"x"=x,"adj"=adj,"weights"=weights,"num"=m)
+
+#-Defining inits-
+#inits3<-function(){list(beta=rep(0,7),tau.t=1,tau.c=1,theta=rep(0,n),phi=rep(0,n),yf=rep(0,n))}
+
+#-Selecting parameters to monitor-
+#parameters2<-c("beta","lambda","theta","phi","yf")
+```
+
+
+```{r}
+#modelCode3 <- "model
+#{
+#Likelihood
+#for (i in 1:n) {
+#	y[i] ~ dpois(mu[i])
+#	mu[i]<-lambda[i]*ee[i]
+#	log(lambda[i])<-beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*#x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]+theta[i]+phi[i]
+#	}
+#Priors 
+#for (i in 1:7) { beta[i] ~ dnorm(0,0.001) }
+#for (i in 1:n) { theta[i] ~ dnorm(0,tau.t) }
+
+#tau.t ~ dgamma(0.001,0.001)
+
+#phi[1:n] ~ car.normal(adj[],weights[],num[],tau.c)
+
+#tau.c ~ dgamma(0.1,0.1)
+
+#Prediction 
+#for (i in 1:n) { yf[i] ~ dpois(mu[i]) }
+
+#}" 
+
+#modelo3.sim <- bugsModel$new(data3, inits3, parameters2, ,n.thin=5, #n.iter=1000, n.burnin=100)
+
+#modelo3.sim$runBugsModel()
+```
+
+## Checamos convergencia
+```{r}
+#modelo3.sim$graphConvergence(parama=5)
+
+#modelo3.sim$summaryModel()
+
+#modelo3.sim$dicModelfunc()
+
+#modelo3.sim$resumenfunc()
+```
+
+## Graficamos resultados
+
+```{r}
+
+```
+
+## Mapas para analizar(Análisis exploratorio de datos de modelo 3)
+```{r}
+#Map of SMR
+#plotvar<- y/ee # podemos modificar para checar aspectos
+
+#nclr <- 6
+#plotclr <- colorRampPalette(c("#a6cee3", "#1f78b4"))(nclr)
+#class<-classIntervals(plotvar,nclr,dataPrecision=2,style="quantile")
+#colcode<-findColours(class,plotclr)
+#
+#boston.map <- bostonSpatialData
+#plot(boston.map,col=colcode)
+#legend("bottomleft", legend=names(attr(colcode, "table")), 
+#       fill=attr(colcode, "palette"), cex=1, bty="n")
+#title(main="Distritos de boston")
+```
+
+
+
+# Modelo 4
+```{r}
+PorcentajerAfroamericanos=c(5.7,
+                            4.3,
+                            1.4,
+                            4.3,
+                            5.1,
+                            44.0,
+                            4.0,
+                            2.5,
+                            5.4,
+                            46.4,
+                            14.3,
+                            5.4,
+                            74.4,
+                            15.3,
+                            0.3,
+                            19.3,
+                            50.3,
+                            5.6,
+                            2.1,
+                            11.3,
+                            7.0,
+                            12.2)
+
+incomePerCapita=c(34149,
+                  110677,
+                  100005,
+                  41261,
+                  75339,
+                  29767,
+                  80057,
+                  31473,
+                  28021,
+                  32744,
+                  51655,
+                  7975,
+                  28356,
+                  23446,
+                  89696,
+                  41252,
+                  20978,
+                  64745,
+                  129651,
+                  83609,
+                  77069,
+                  47836)
+
+
+x=cbind( PorcentajerAfroamericanos, incomePerCapita, data_indices$indice_educacion)
+x<-matrix(x,nrow = 22,ncol=3)
+```
+
+
+```{r}
+# Defining data of the model
+data4<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
+
+#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+
+#-Defining inits-
+inits4<-function(){list(beta=rep(0,4),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters4<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+
+
+```
+
+
+```{r}
+
+modelo4.sim <- bugsModel$new(data4, inits4, parameters4, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo4.txt",,n.thin=20, n.iter=50000, n.burnin=5000)
+
+modelo4.sim$runBugsModel()
+```
+
+## Checamos convergencia
+```{r}
+
+saveRDS(modelo4.sim, "Modelo4FINAL.rds")
+
+modelo4.sim$graphConvergence(parama=2)
+
+modelo4.sim$summaryModel()
+
+modelo4.sim$dicModelfunc()
+
+modelo4.sim$resumenfunc()
+```

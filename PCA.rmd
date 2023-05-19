@@ -1,0 +1,82 @@
+---
+output: reprex::reprex_document
+knit: reprex::reprex_render
+---
+
+# Análisis de Componentes principales para cada base de datos 
+
+Se realizará un análisis de componentes principales para 6 bases de datos: 
+
+1. datos/RegresionAvanzada/base_edades.csv 
+2. datos/RegresionAvanzada/base_educacion.csv 
+3. datos/RegresionAvanzada/base_movilidad.csv 
+4. datos/RegresionAvanzada/base_percapita.csv 
+5. datos/RegresionAvanzada/base_pobreza.csv 
+6. datos/RegresionAvanzada/base_razas.csv 
+
+# Análisis para la base de edades [1]
+```{r}
+edades <- read.csv("datos/RegresionAvanzada/base_edades.csv", header = TRUE, sep = ",")
+
+# Función para que elimine el signo '%' de los datos y solo deje el coeficiente 
+quitarPorcentaje <- function(x){
+  x <- as.numeric(gsub("%", "", x))
+  return(x)
+}
+
+
+# Función para realizar el análisis de PCA para cualquier base de input 
+analisisPCA <- function(base, removePercentage = TRUE){
+  # Aplicamos la función para quitar el signo de porcentaje
+  if(removePercentage == TRUE){
+    base[,-1] <- sapply(base[,-1], quitarPorcentaje)
+  }
+  # Seleccionamos las columnas que nos interesan para el análisis que son todas menos la primera columna
+  pca_base <- base[,-1]
+  # Vamos a aplicar pca a pca_base
+  pca_base <- prcomp(pca_base, scale = TRUE)
+  # Graficamos los resultados
+  biplot(pca_base)
+  # Graficamos la varianza explicada por cada componente
+  plot(pca_base, type = "l")
+  print(pca_base)
+  print(summary(pca_base))
+  
+  # Vamos a construir un índice de educación utilizando las dos primeras componentes principales
+  # Primero vamos a estandarizar las dos primeras componentes principales
+  pca_base$rotation[,1] <- scale(pca_base$rotation[,1])
+  pca_base$rotation[,2] <- scale(pca_base$rotation[,2])
+  # Ahora vamos a construir el índice de educación
+  base$indice_base <- pca_base$x[,1] + pca_base$x[,2]
+  # Graficamos el índice de educación
+  hist(base$indice_base)
+  # Graficamos el índice de educación por estado
+  # Vamos a hacer que las etiquetas en x estén verticales para que se puedan ver todas
+  par(las = 2)
+  # Vamos a quitar la etiqueta del eje x
+  boxplot(base$indice_base ~ base$Neighb, xlab = "", ylab = "Índice de educación")
+  return(base$indice_base); 
+}
+
+indice_edades <- analisisPCA(edades); 
+
+```
+
+Vamos a repetir lo mismo para la base de datos de educación [2]
+```{r}
+educacion <- read.csv("datos/RegresionAvanzada/base_educacion.csv", header = TRUE, sep = ",")
+
+indice_educacion <- analisisPCA(educacion); 
+```
+
+Vamos a repetir lo mismo para la base de datos de movilidad [3]
+```{r}
+movilidad <- read.csv("datos/RegresionAvanzada/base_movilidad.csv", header = TRUE, sep = ",")
+indice_movilidad <- analisisPCA(movilidad); 
+```
+
+Vamos a repetir lo mismo para la base de datos de raza [6]
+```{r}
+raza <- read.csv("datos/RegresionAvanzada/base_razas.csv", header = TRUE, sep = ",")
+indice_raza <- analisisPCA(raza); 
+```
