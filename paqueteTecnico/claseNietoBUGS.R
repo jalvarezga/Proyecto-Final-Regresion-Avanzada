@@ -14,6 +14,24 @@ quitarPorcentaje <- function(x){
   return(x)
 }
 
+<<<<<<< HEAD
+=======
+#interesantes
+eliminar_fila_por_rownames <- function(matriz, rowname) {
+  fila_a_eliminar <- which(rownames(matriz) == rowname)
+  nueva_matriz <- matriz[-fila_a_eliminar, ]
+  rownames(nueva_matriz) <- rownames(nueva_matriz)[-fila_a_eliminar]
+  return(nueva_matriz)
+}
+
+seleccionar_columnas <- function(matriz) {
+  columnas <- c(1, 3, 7)
+  nueva_matriz <- matriz[, columnas]
+  return(nueva_matriz)
+}
+
+
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0
 bugsModel <- R6Class("bugsModel",
   public = list(
     data = NULL,
@@ -48,14 +66,24 @@ bugsModel <- R6Class("bugsModel",
     #Corremos una cadena
     runBugsModel = function() {
       require(R2OpenBUGS)
+<<<<<<< HEAD
       self$modelSim <- bugs(model.file = textConnection(self$model.fileText),
+=======
+      require(R2jags)
+      self$modelSim <- bugs(model.file = self$model.fileText,
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0
       data = self$data,
       parameters.to.sav = self$parms,
       inits = self$inits,
       n.iter=self$n.iter,
       n.chains = self$n.chains,
       n.burnin = self$n.burnin,
+<<<<<<< HEAD
       n.thin = self$n.thin)
+=======
+      n.thin = self$n.thin,
+      debug=F)
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0
       
       self$outModelSim <- self$modelSim$sims.list
       self$graphModelSim <- self$modelSim$sims.array
@@ -101,8 +129,14 @@ bugsModel <- R6Class("bugsModel",
     },
     #Creamos la tabla resumen
     resumenfunc = function() {
+<<<<<<< HEAD
       out.w<-self$summModel[!grep("deviance", rownames(self$summModel)),c(1,3,7)]
       out.w<-cbind(out.w,apply(out$w,2,prob))
+=======
+      out <- self$outModelSim
+      out.w<-seleccionar_columnas(eliminar_fila_por_rownames(self$summModel,"deviance"))
+      out.w<-cbind(out.w,apply(out$beta,2,prob))
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0
       dimnames(out.w)[[2]][4]<-"prob"
       print(out.w)
     }
@@ -112,3 +146,7 @@ bugsModel <- R6Class("bugsModel",
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0

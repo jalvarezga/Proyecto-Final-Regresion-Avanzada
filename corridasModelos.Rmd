@@ -189,18 +189,23 @@ for (i in 1:m) {
 
 }" 
 
-modelo.sim <- bugsModel$new(data, inits, parameters, modelCode1,n.thin=5, n.iter=10000, n.burnin=1000)
+modelo.sim <- bugsModel$new(data, inits, parameters, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo1.txt",n.thin=50, n.iter=50000, n.burnin=5000)
 
 modelo.sim$runBugsModel()
+
 ```
 
 ## Checamos convergencia
 ```{r}
+
+saveRDS(modelo.sim, "Modelo1FINAL.rds")
+
 modelo.sim$graphConvergence(parama=5)
 
 modelo.sim$summaryModel()
 
 modelo.sim$dicModelfunc()
+
 
 modelo.sim$resumenfunc()
 ```
@@ -208,7 +213,7 @@ modelo.sim$resumenfunc()
 ## Graficamos resultados
 
 ```{r}
-
+names(x)
 ```
 
 # Modelo 2
@@ -248,66 +253,6 @@ data_razas$Other.#28
 
 
 ```
-
-PUEDES MODIFICAR DESDE AQUÍ PARA QUE CORRA EL MODELO
-```{r}
-# Defining data of the model
-data<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
-
-#-Defining inits-
-#MODIFICAR
-inits2<-function(){list(beta=rep(0,28),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
-
-
-```
-```{r}
-modelCode2 <- "model
-{
-#Likelihood
-for (i in 1:n) {
-	y[i] ~ dnorm(mu[i],tau)
-	mu[i]<-w[i]+beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]+ beta[8]*x[i,7]+beta[9]*x[i,8]+beta[10]*x[i,9]+beta[11]*x[i,10]+beta[12]*x[i,11]+beta[13]*x[i,12]+beta[14]*x[i,13]+beta[15]*x[i,14]+beta[16]*x[i,15]+beta[17]*x[i,16]+beta[18]*x[i,17]+beta[19]*x[i,18]+beta[20]*x[i,19]+beta[21]*x[i,20]+beta[22]*x[i,21]+beta[23]*x[i,22]+beta[24]*x[i,23]+beta[25]*x[i,24]+beta[26]*x[i,25]+beta[27]*x[i,26]+beta[28]*x[i,27]+beta[29]*x[i,28]
-	w0[i]<-0
-	}#MODFICAR--------------------------------------------
-
-#Priors 
-for (j in 1:28) { beta[j] ~ dnorm(0,0.001) } #MODIFICAR--------------
-
-tau ~ dgamma(0.1,0.1)
-w[1:n] ~ spatial.exp(w0[],s1[],s2[],tau.w,phi,1)
-tau.w ~ dgamma(0.1,0.1)
-phi ~ dgamma(0.1,0.1)
-
-#Prediction 1
-for (i in 1:n) { yf1[i] ~ dnorm(mu[i],tau) }
-#Prediction 2
-#wf[1:m] ~ spatial.pred(w0f[],s1f[],s2f[],w[])
-for (i in 1:m) { 
-	yf2[i] ~ dnorm(muf[i],tau) 
-	muf[i]<-wf[i]+beta[1]+beta[2]*predx[i,1]+beta[3]*predx[i,2]+beta[4]*predx[i,3]+beta[5]*predx[i,4]+beta[6]*predx[i,5]+beta[7]*predx[i,6]+ beta[8]*predx[i,7]+beta[9]*predx[i,8]+beta[10]*predx[i,9]+beta[11]*predx[i,10]+beta[12]*predx[i,11]+beta[13]*predx[i,12]+beta[14]*predx[i,13]+beta[15]*predx[i,14]+beta[16]*predx[i,15]+beta[17]*predx[i,16]+beta[18]*predx[i,17]+beta[19]*predx[i,18]+beta[20]*predx[i,19]+beta[21]*predx[i,20]+beta[22]*predx[i,21]+beta[23]*predx[i,22]+beta[24]*predx[i,23]+beta[25]*predx[i,24]+beta[26]*predx[i,25]+beta[27]*predx[i,26]+beta[28]*predx[i,27]+beta[29]*predx[i,28]
-	w0f[i]<-0
-	wf[i] ~ spatial.unipred(w0f[i],s1f[i],s2f[i],w[])
-}
-
-}" 
-
-modelo2.sim <- bugsModel$new(data2, inits2, parameters, modelCode2,n.thin=5, n.iter=10000, n.burnin=1000)
-
-modelo2.sim$runBugsModel()
-```
-
-## Checamos convergencia
-```{r}
-modelo2.sim$graphConvergence(parama=5)
-
-modelo2.sim$summaryModel()
-
-modelo2.sim$dicModelfunc()
-
-modelo2.sim$resumenfunc()
-```
-
-
 #Modelo pasimonioso
 ```{r}
 PorcentajeCasados=c(16.9,
@@ -538,13 +483,48 @@ metroTren=c(19.4,
             17.3,
             19.0,
             11.9)
-x=cbind(porcentajeUndergrads, PorcentajeMaestria, PorcentajeHispanos, PorcentajerAfroamericanos, PorcentajeMayores, PorcentajeCasados, incomePerCapita, longTravel, metroTren)
+x=cbind(porcentajeUndergrads, PorcentajeMaestria, PorcentajeHispanos, PorcentajerAfroamericanos, PorcentajeMayores, PorcentajeCasados, incomePerCapita, metroTren)
+x<-matrix(x,nrow = 22,ncol=8)
 x
 ```
 
 
 
+PUEDES MODIFICAR DESDE AQUÍ PARA QUE CORRA EL MODELO
+```{r}
+# Defining data of the model
+data2<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
 
+#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+
+#-Defining inits-
+inits2<-function(){list(beta=rep(0,9),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+
+
+```
+```{r}
+
+modelo2.sim <- bugsModel$new(data2, inits2, parameters, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo2.txt",,n.thin=20, n.iter=50000, n.burnin=5000)
+
+modelo2.sim$runBugsModel()
+```
+
+## Checamos convergencia
+```{r}
+
+saveRDS(modelo2.sim, "Modelo2FINAL.rds")
+
+modelo2.sim$graphConvergence(parama=5)
+
+modelo2.sim$summaryModel()
+
+modelo2.sim$dicModelfunc()
+
+modelo2.sim$resumenfunc()
+```
 
 ## Graficamos resultados
 
@@ -556,96 +536,96 @@ x
 
 ```{r}
 # variable de respuesta para cada distrito
-y<- datosFiltradosNeigh$count
-n<-length(y) 
+#y<- datosFiltradosNeigh$count
+#n<-length(y) 
 
 # definiendo cantidad de personas por neighborhood
-ee <- mVector$mVectorInicial
+#ee <- mVector$mVectorInicial
 
-m <- 2
+#m <- 2
 # valores de los regresiones para cada distrito asociadas a una coordenada
 #x <- cbind()
 
 #Preparando datos espaciales
-bostonSpatialData <- readOGR(dsn = "paqueteTecnico/Boston_Neighborhoods.geojson")
-bostonSpatialData <- bostonSpatialData[!bostonSpatialData$Name %in% c("Bay Village","Chinatown","Harbor Islands","Leather District"),]
+#bostonSpatialData <- readOGR(dsn = "paqueteTecnico/Boston_Neighborhoods.geojson")
+#bostonSpatialData <- bostonSpatialData[!bostonSpatialData$Name %in% c("Bay Village","Chinatown","Harbor Islands","Leather District"),]
 
-bostonSpatialData <- bostonSpatialData[order(bostonSpatialData$Name),]
+#bostonSpatialData <- bostonSpatialData[order(bostonSpatialData$Name),]
 
-bostonSpatialData <- gBuffer(bostonSpatialData, byid=TRUE, width=0)
+#bostonSpatialData <- gBuffer(bostonSpatialData, byid=TRUE, width=0)
 
 
 #-Defining data matrix
-W.nb<-poly2nb(bostonSpatialData)
-print(W.nb)
-m<-rep(0,n)
-W.l<-matrix(NA,nrow=n,ncol=11)
-adj<-NULL
-for (i in 1:n) {
-  if (W.nb[[i]][1]!=0) {
-    m[i]<-length(W.nb[[i]])
-    W.l[i,1:m[i]]<-W.nb[[i]]
-    adj<-c(adj,W.nb[[i]])
-  }}
-W<-matrix(0,nrow=n,ncol=n)
-for (i in 1:n) {
-  for (j in 1:m[i]) {
-    W[i,W.l[i,j]]<-1
-    W[W.l[i,j],i]<-1
-  }
-}
-weights<-rep(1,length(adj))
+#W.nb<-poly2nb(bostonSpatialData)
+#print(W.nb)
+#m<-rep(0,n)
+#W.l<-matrix(NA,nrow=n,ncol=11)
+#adj<-NULL
+#for (i in 1:n) {
+#  if (W.nb[[i]][1]!=0) {
+#    m[i]<-length(W.nb[[i]])
+#    W.l[i,1:m[i]]<-W.nb[[i]]
+#    adj<-c(adj,W.nb[[i]])
+#  }}
+#W<-matrix(0,nrow=n,ncol=n)
+#for (i in 1:n) {
+#  for (j in 1:m[i]) {
+#    W[i,W.l[i,j]]<-1
+#    W[W.l[i,j],i]<-1
+#  }
+#}
+#weights<-rep(1,length(adj))
 
 
 #-Defining data-
-data<-list("n"=n,"y"=y,"ee"=ee,"x"=x,"adj"=adj,"weights"=weights,"num"=m)
+#data3<-list("n"=n,"y"=y,"ee"=ee,"x"=x,"adj"=adj,"weights"=weights,"num"=m)
 
 #-Defining inits-
-inits<-function(){list(beta=rep(0,7),tau.t=1,tau.c=1,theta=rep(0,n),phi=rep(0,n),yf=rep(0,n))}
+#inits3<-function(){list(beta=rep(0,7),tau.t=1,tau.c=1,theta=rep(0,n),phi=rep(0,n),yf=rep(0,n))}
 
 #-Selecting parameters to monitor-
-parameters<-c("beta","lambda","theta","phi","yf")
+#parameters2<-c("beta","lambda","theta","phi","yf")
 ```
 
 
 ```{r}
-modelCode3 <- "model
-{
+#modelCode3 <- "model
+#{
 #Likelihood
-for (i in 1:n) {
-	y[i] ~ dpois(mu[i])
-	mu[i]<-lambda[i]*ee[i]
-	log(lambda[i])<-beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]+theta[i]+phi[i]
-	}
+#for (i in 1:n) {
+#	y[i] ~ dpois(mu[i])
+#	mu[i]<-lambda[i]*ee[i]
+#	log(lambda[i])<-beta[1]+beta[2]*x[i,1]+beta[3]*x[i,2]+beta[4]*x[i,3]+beta[5]*#x[i,4]+beta[6]*x[i,5]+beta[7]*x[i,6]+theta[i]+phi[i]
+#	}
 #Priors 
-for (i in 1:7) { beta[i] ~ dnorm(0,0.001) }
-for (i in 1:n) { theta[i] ~ dnorm(0,tau.t) }
+#for (i in 1:7) { beta[i] ~ dnorm(0,0.001) }
+#for (i in 1:n) { theta[i] ~ dnorm(0,tau.t) }
 
-tau.t ~ dgamma(0.001,0.001)
+#tau.t ~ dgamma(0.001,0.001)
 
-phi[1:n] ~ car.normal(adj[],weights[],num[],tau.c)
+#phi[1:n] ~ car.normal(adj[],weights[],num[],tau.c)
 
-tau.c ~ dgamma(0.1,0.1)
+#tau.c ~ dgamma(0.1,0.1)
 
 #Prediction 
-for (i in 1:n) { yf[i] ~ dpois(mu[i]) }
+#for (i in 1:n) { yf[i] ~ dpois(mu[i]) }
 
-}" 
+#}" 
 
-modelo3.sim <- bugsModel$new(data3, inits3, parameters2, modelCode3,n.thin=5, n.iter=10000, n.burnin=1000)
+#modelo3.sim <- bugsModel$new(data3, inits3, parameters2, ,n.thin=5, #n.iter=1000, n.burnin=100)
 
-modelo3.sim$runBugsModel()
+#modelo3.sim$runBugsModel()
 ```
 
 ## Checamos convergencia
 ```{r}
-modelo3.sim$graphConvergence(parama=5)
+#modelo3.sim$graphConvergence(parama=5)
 
-modelo3.sim$summaryModel()
+#modelo3.sim$summaryModel()
 
-modelo3.sim$dicModelfunc()
+#modelo3.sim$dicModelfunc()
 
-modelo3.sim$resumenfunc()
+#modelo3.sim$resumenfunc()
 ```
 
 ## Graficamos resultados
@@ -657,16 +637,106 @@ modelo3.sim$resumenfunc()
 ## Mapas para analizar(Análisis exploratorio de datos de modelo 3)
 ```{r}
 #Map of SMR
-plotvar<- y/ee # podemos modificar para checar aspectos
+#plotvar<- y/ee # podemos modificar para checar aspectos
 
-nclr <- 6
-plotclr <- colorRampPalette(c("#a6cee3", "#1f78b4"))(nclr)
-class<-classIntervals(plotvar,nclr,dataPrecision=2,style="quantile")
-colcode<-findColours(class,plotclr)
+#nclr <- 6
+#plotclr <- colorRampPalette(c("#a6cee3", "#1f78b4"))(nclr)
+#class<-classIntervals(plotvar,nclr,dataPrecision=2,style="quantile")
+#colcode<-findColours(class,plotclr)
 #
-boston.map <- bostonSpatialData
-plot(boston.map,col=colcode)
-legend("bottomleft", legend=names(attr(colcode, "table")), 
-       fill=attr(colcode, "palette"), cex=1, bty="n")
-title(main="Distritos de boston")
+#boston.map <- bostonSpatialData
+#plot(boston.map,col=colcode)
+#legend("bottomleft", legend=names(attr(colcode, "table")), 
+#       fill=attr(colcode, "palette"), cex=1, bty="n")
+#title(main="Distritos de boston")
 ```
+
+
+
+# Modelo 4
+```{r}
+PorcentajerAfroamericanos=c(5.7,
+                            4.3,
+                            1.4,
+                            4.3,
+                            5.1,
+                            44.0,
+                            4.0,
+                            2.5,
+                            5.4,
+                            46.4,
+                            14.3,
+                            5.4,
+                            74.4,
+                            15.3,
+                            0.3,
+                            19.3,
+                            50.3,
+                            5.6,
+                            2.1,
+                            11.3,
+                            7.0,
+                            12.2)
+
+incomePerCapita=c(34149,
+                  110677,
+                  100005,
+                  41261,
+                  75339,
+                  29767,
+                  80057,
+                  31473,
+                  28021,
+                  32744,
+                  51655,
+                  7975,
+                  28356,
+                  23446,
+                  89696,
+                  41252,
+                  20978,
+                  64745,
+                  129651,
+                  83609,
+                  77069,
+                  47836)
+
+
+x=cbind( PorcentajerAfroamericanos, incomePerCapita, data_indices$indice_educacion)
+x<-matrix(x,nrow = 22,ncol=3)
+```
+
+
+```{r}
+# Defining data of the model
+data4<-list("n"=n-m,"y"=y[-nAleExc],"x"=x[-nAleExc,],"s1"=s1[-nAleExc],"s2"=s2[-nAleExc],"m"=m,"s1f"=s1f,"s2f"=s2f,"predx"=x[nAleExc,])
+
+#NOTAAA: PREDX ES EL ÍNDICE DEL NEIGHBORHOOD MÁS CERCANO DADA LA COORDENADA NUEVA(en este caso es un distrito central)
+
+#-Defining inits-
+inits4<-function(){list(beta=rep(0,4),tau=1,w=rep(0,n-m),tau.w=1,phi=1,yf1=rep(0,n-m),wf=rep(0,m),yf2=rep(0,m))}
+
+#-Selecting parameters to monitor-
+parameters4<-c("beta","tau","w","tau.w","phi","yf1","yf2")
+
+
+```
+
+
+```{r}
+
+modelo4.sim <- bugsModel$new(data4, inits4, parameters4, "C:/Users/salones/Documents/Proyecto-Final-Regresion-Avanzada-main/modelosTxt/modelo4.txt",,n.thin=20, n.iter=50000, n.burnin=5000)
+
+modelo4.sim$runBugsModel()
+```
+
+## Checamos convergencia
+```{r}
+
+saveRDS(modelo4.sim, "Modelo4FINAL.rds")
+
+modelo4.sim$graphConvergence(parama=2)
+
+modelo4.sim$summaryModel()
+
+modelo4.sim$dicModelfunc()
