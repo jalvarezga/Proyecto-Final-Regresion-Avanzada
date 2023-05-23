@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 distrito,Married-couple family,"Male householder, no spouse present","Female householder, no spouse present",Householder living alone,Householder not living alone
 Allston,16.9%,2.6%,5.0%,37.3%,38.3%
 Back Bay,27.2%,1.2%,4.3%,52.3%,15.0%
@@ -20,4 +21,28 @@ South Boston,24.7%,2.8%,11.2%,34.9%,26.3%
 South Boston Waterfront,23.2%,1.7%,2.7%,57.5%,14.8%
 South End,28.3%,2.2%,8.8%,46.6%,14.2%
 West End,29.6%,1.8%,2.0%,53.9%,12.7%
+=======
+distrito,Married-couple family,"Male householder, no spouse present","Female householder, no spouse present",Householder living alone,Householder not living alone
+Allston,16.9%,2.6%,5.0%,37.3%,38.3%
+Back Bay,27.2%,1.2%,4.3%,52.3%,15.0%
+Beacon Hill,28.4%,0.7%,1.0%,50.6%,19.3%
+Brighton,26.4%,2.2%,6.0%,34.2%,31.2%
+Charlestown,36.4%,4.2%,9.4%,38.5%,11.5%
+Dorchester,26.6%,6.7%,27.0%,29.0%,10.7%
+Downtown,35.8%,2.2%,4.0%,45.8%,12.2%
+East Boston,30.4%,10.8%,17.1%,27.9%,13.7%
+Fenway,15.3%,2.1%,3.4%,54.0%,25.2%
+Hyde Park,38.4%,6.0%,26.8%,22.8%,6.0%
+Jamaica Plain,33.7%,3.2%,12.3%,32.4%,18.3%
+Longwood,13.8%,3.7%,0.7%,62.8%,19.0%
+Mattapan,29.8%,7.5%,31.3%,28.5%,2.9%
+Mission Hill,13.7%,2.5%,15.5%,42.1%,26.3%
+North End,17.8%,1.1%,3.5%,52.4%,25.2%
+Roslindale,40.4%,5.0%,16.5%,28.7%,9.4%
+Roxbury,17.8%,6.2%,31.0%,37.1%,8.0%
+South Boston,24.7%,2.8%,11.2%,34.9%,26.3%
+South Boston Waterfront,23.2%,1.7%,2.7%,57.5%,14.8%
+South End,28.3%,2.2%,8.8%,46.6%,14.2%
+West End,29.6%,1.8%,2.0%,53.9%,12.7%
+>>>>>>> 1e1ad77b03febfa5b432dc8ede5b6eb19c198dd0
 West Roxbury,46.2%,3.8%,11.2%,31.8%,7.0%
